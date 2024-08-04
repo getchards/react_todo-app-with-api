@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Todo } from '../types/Todo';
+import classNames from 'classnames';
 
 type Props = {
   todos: Todo[];
@@ -8,6 +9,7 @@ type Props = {
   onChange: (value: string) => void;
   onReset: () => void;
   onError: (error: string) => void;
+  onToggleAll: () => void;
 };
 
 export const Header: React.FC<Props> = ({
@@ -17,6 +19,7 @@ export const Header: React.FC<Props> = ({
   onChange,
   onReset,
   onError,
+  onToggleAll,
 }) => {
   const titleField = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -61,13 +64,21 @@ export const Header: React.FC<Props> = ({
       });
   };
 
+  const areAllTodosCompleted =
+    todos.length > 0 && todos.every(todo => todo.completed);
+
   return (
     <header className="todoapp__header">
-      <button
-        type="button"
-        className="todoapp__toggle-all active"
-        data-cy="ToggleAllButton"
-      />
+      {todos.length > 0 && (
+        <button
+          type="button"
+          className={classNames('todoapp__toggle-all', {
+            active: areAllTodosCompleted,
+          })}
+          data-cy="ToggleAllButton"
+          onClick={onToggleAll}
+        />
+      )}
 
       <form onSubmit={handleSubmit}>
         <input

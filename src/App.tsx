@@ -24,6 +24,7 @@ export const App: React.FC = () => {
   const [title, setTitle] = useState('');
   const [editingTodoId, setEditingTodoId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getTodos()
@@ -162,8 +163,10 @@ export const App: React.FC = () => {
 
     const newTodo: Todo = {
       ...updatedTodo,
-      title: editTitle,
+      title: editTitle.trim(),
     };
+
+    setLoading(true);
 
     return updateTodoStatus(newTodo)
       .then(() => {
@@ -175,11 +178,37 @@ export const App: React.FC = () => {
       })
       .catch(() => {
         setErrorMessage('Unable to update a todo');
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
 
   const handleEditChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setEditTitle(event.target.value);
+  };
+
+  const toggleAll = async () => {
+    const allCompleted = todos.every(todo => todo.completed);
+    const todosToUpdate = todos.filter(
+      todo => todo.completed !== !allCompleted,
+    );
+
+    const updatedTodos = todos.map(todo => ({
+      ...todo,
+      completed: !allCompleted,
+    }));
+
+    try {
+      await Promise.all(
+        todosToUpdate.map(todo =>
+          updateTodoStatus({ ...todo, completed: !allCompleted }),
+        ),
+      );
+      setTodos(updatedTodos);
+    } catch (error) {
+      setErrorMessage('Unable to update todos');
+    }
   };
 
   if (!USER_ID) {
@@ -198,6 +227,7 @@ export const App: React.FC = () => {
           onChange={handleChangeTitle}
           onReset={reset}
           onError={setErrorMessage}
+          onToggleAll={toggleAll}
         />
         <TodoList
           editingTodoId={editingTodoId}
@@ -209,6 +239,7 @@ export const App: React.FC = () => {
           editTitle={editTitle}
           onEditChange={handleEditChange}
           onSaveEdit={saveEdit}
+          loading={loading}
         />
         {todos.length > 0 && (
           <Footer

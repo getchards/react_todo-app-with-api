@@ -28,6 +28,9 @@ export const TodoList: React.FC<Props> = ({
     if (event.key === 'Enter') {
       event.preventDefault();
       onSaveEdit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      onStartEditing({ id: 0, title: '', completed: false, userId: 0 });
     }
   };
 
@@ -54,10 +57,11 @@ export const TodoList: React.FC<Props> = ({
           {id === editingTodoId ? (
             <input
               type="text"
-              className="todo__edit-input"
+              className=" todo todo__title"
               value={editTitle}
               onChange={onEditChange}
               onBlur={onSaveEdit}
+              data-cy="TodoTitleField"
               onKeyDown={handleKeyDown}
               autoFocus
             />
@@ -73,19 +77,21 @@ export const TodoList: React.FC<Props> = ({
             </span>
           )}
 
-          <button
-            type="button"
-            className="todo__remove"
-            data-cy="TodoDelete"
-            onClick={() => onDelete(id)}
-          >
-            ×
-          </button>
+          {id !== editingTodoId && (
+            <button
+              type="button"
+              className="todo__remove"
+              data-cy="TodoDelete"
+              onClick={() => onDelete(id)}
+            >
+              ×
+            </button>
+          )}
 
           <div
             data-cy="TodoLoader"
             className={cn('modal overlay', {
-              'is-active': id === idTodo,
+              'is-active': loading || id === idTodo || id === editingTodoId,
             })}
           >
             <div className="modal-background has-background-white-ter" />
