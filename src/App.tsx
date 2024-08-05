@@ -1,5 +1,3 @@
-/* eslint-disable max-len */
-/* eslint-disable jsx-a11y/control-has-associated-label */
 import React, { useEffect, useMemo, useState } from 'react';
 import { UserWarning } from './UserWarning';
 import {
@@ -24,7 +22,9 @@ export const App: React.FC = () => {
   const [title, setTitle] = useState('');
   const [editingTodoId, setEditingTodoId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
+  const [isToggleAllLoading, setIsToggleAllLoading] = useState(false);
+  const [loadingTodoIds, setLoadingTodoIds] = useState<number[]>([]);
 
   useEffect(() => {
     getTodos()
@@ -97,17 +97,28 @@ export const App: React.FC = () => {
   const completedItems = todos.filter(todo => todo.completed);
 
   async function clearCompletedTodo() {
-    completedItems.map(async todo => {
-      await deleteTodo(todo.id)
-        .then(() => {
-          setTodos(currentTodos =>
-            currentTodos.filter(item => item.id !== todo.id),
-          );
-        })
-        .catch(() => {
-          setErrorMessage('Unable to delete a todo');
-        });
-    });
+    const compItems = todos.filter(todo => todo.completed);
+    const loadingIds = compItems.map(todo => todo.id);
+
+    setLoadingTodoIds(loadingIds);
+
+    try {
+      await Promise.all(
+        compItems.map(todo =>
+          deleteTodo(todo.id)
+            .then(() => {
+              setTodos(currentTodos =>
+                currentTodos.filter(item => item.id !== todo.id),
+              );
+            })
+            .catch(() => {
+              setErrorMessage('Unable to delete a todo');
+            }),
+        ),
+      );
+    } finally {
+      setLoadingTodoIds([]);
+    }
   }
 
   const toggleTodoStatus = (todoId: number) => {
@@ -166,7 +177,7 @@ export const App: React.FC = () => {
       title: editTitle.trim(),
     };
 
-    setLoading(true);
+    setLoadingTodoIds([editingTodoId]);
 
     return updateTodoStatus(newTodo)
       .then(() => {
@@ -180,7 +191,7 @@ export const App: React.FC = () => {
         setErrorMessage('Unable to update a todo');
       })
       .finally(() => {
-        setLoading(false);
+        setLoadingTodoIds([]);
       });
   };
 
@@ -189,15 +200,12 @@ export const App: React.FC = () => {
   };
 
   const toggleAll = async () => {
+    setIsToggleAllLoading(true);
+
     const allCompleted = todos.every(todo => todo.completed);
     const todosToUpdate = todos.filter(
       todo => todo.completed !== !allCompleted,
     );
-
-    const updatedTodos = todos.map(todo => ({
-      ...todo,
-      completed: !allCompleted,
-    }));
 
     try {
       await Promise.all(
@@ -205,9 +213,14 @@ export const App: React.FC = () => {
           updateTodoStatus({ ...todo, completed: !allCompleted }),
         ),
       );
-      setTodos(updatedTodos);
-    } catch (error) {
+
+      setTodos(currentTodos =>
+        currentTodos.map(todo => ({ ...todo, completed: !allCompleted })),
+      );
+    } catch {
       setErrorMessage('Unable to update todos');
+    } finally {
+      setIsToggleAllLoading(false);
     }
   };
 
@@ -240,6 +253,8 @@ export const App: React.FC = () => {
           onEditChange={handleEditChange}
           onSaveEdit={saveEdit}
           loading={loading}
+          loadingTodoIds={loadingTodoIds}
+          isToggleAllLoading={isToggleAllLoading}
         />
         {todos.length > 0 && (
           <Footer

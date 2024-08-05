@@ -11,6 +11,9 @@ type Props = {
   onEditChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveEdit: () => void;
   onStartEditing: (todo: Todo) => void;
+  loading: boolean;
+  loadingTodoIds: number[];
+  isToggleAllLoading: boolean;
 };
 
 export const TodoList: React.FC<Props> = ({
@@ -23,6 +26,8 @@ export const TodoList: React.FC<Props> = ({
   onEditChange,
   onSaveEdit,
   editingTodoId,
+  loadingTodoIds,
+  isToggleAllLoading,
 }) => {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -91,7 +96,10 @@ export const TodoList: React.FC<Props> = ({
           <div
             data-cy="TodoLoader"
             className={cn('modal overlay', {
-              'is-active': loading || id === idTodo || id === editingTodoId,
+              'is-active':
+                loadingTodoIds.includes(id) ||
+                id === idTodo ||
+                isToggleAllLoading,
             })}
           >
             <div className="modal-background has-background-white-ter" />
