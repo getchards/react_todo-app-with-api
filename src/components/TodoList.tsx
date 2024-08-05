@@ -1,25 +1,25 @@
+import React from 'react';
 import cn from 'classnames';
 import { Todo } from '../types/Todo';
 
-type Props = {
-  list: Todo[];
-  onDelete: (id: number) => void;
-  idTodo: number;
-  onTodoStatus: (id: number) => void;
-  editTitle: string;
+interface Props {
   editingTodoId: number | null;
+  onTodoStatus: (todoId: number) => Promise<void> | undefined;
+  list: Todo[];
+  onDelete: (todoId: number) => Promise<void>;
+  idTodo: number;
+  onStartEditing: (todo: Todo) => void;
+  editTitle: string;
   onEditChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSaveEdit: () => void;
-  onStartEditing: (todo: Todo) => void;
   loading: boolean;
   loadingTodoIds: number[];
   isToggleAllLoading: boolean;
-};
+}
 
 export const TodoList: React.FC<Props> = ({
   list,
   onDelete,
-  idTodo,
   onTodoStatus,
   onStartEditing,
   editTitle,
@@ -27,7 +27,6 @@ export const TodoList: React.FC<Props> = ({
   onSaveEdit,
   editingTodoId,
   loadingTodoIds,
-  isToggleAllLoading,
 }) => {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -42,15 +41,11 @@ export const TodoList: React.FC<Props> = ({
   return (
     <section className="todoapp__main" data-cy="TodoList">
       {list.map(({ title, id, completed, userId }) => (
-        <div
-          data-cy="Todo"
-          className={cn('todo', { completed: completed })}
-          key={id}
-        >
+        <div data-cy="Todo" className={cn('todo', { completed })} key={id}>
           {/* eslint-disable jsx-a11y/label-has-associated-control  */}
           <label className="todo__status-label" htmlFor={String(id)}>
             <input
-              id={'' + id}
+              id={String(id)}
               data-cy="TodoStatus"
               type="checkbox"
               className="todo__status"
@@ -62,7 +57,7 @@ export const TodoList: React.FC<Props> = ({
           {id === editingTodoId ? (
             <input
               type="text"
-              className=" todo todo__title"
+              className="todo todo__title"
               value={editTitle}
               onChange={onEditChange}
               onBlur={onSaveEdit}
@@ -96,10 +91,7 @@ export const TodoList: React.FC<Props> = ({
           <div
             data-cy="TodoLoader"
             className={cn('modal overlay', {
-              'is-active':
-                loadingTodoIds.includes(id) ||
-                id === idTodo ||
-                isToggleAllLoading,
+              'is-active': loadingTodoIds.includes(id),
             })}
           >
             <div className="modal-background has-background-white-ter" />

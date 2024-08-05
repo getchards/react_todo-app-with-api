@@ -48,6 +48,7 @@ export const App: React.FC = () => {
 
   const onDeleteTodo = (todoId: number) => {
     setIdTodo(todoId);
+    setLoadingTodoIds(prev => [...prev, todoId]);
 
     return deleteTodo(todoId)
       .then(() => {
@@ -58,6 +59,9 @@ export const App: React.FC = () => {
       .catch(() => {
         setTodos(todos);
         setErrorMessage('Unable to delete a todo');
+      })
+      .finally(() => {
+        setLoadingTodoIds(prev => prev.filter(id => id !== todoId));
       });
   };
 
@@ -69,17 +73,24 @@ export const App: React.FC = () => {
     };
 
     setTodos(currentTodos => [...currentTodos, { ...newTodo, id: 0 }]);
-    setIdTodo(0);
+    setLoadingTodoIds(prev => [...prev, 0]);
 
     return addNewTodo(newTodo)
       .then(todo => {
         setTodos(todos);
-        setTodos(currentTodos => [...currentTodos, todo]);
+        setTodos(currentTodos => [
+          ...currentTodos.filter(t => t.id !== 0),
+          todo,
+        ]);
       })
       .catch(error => {
         setErrorMessage('Unable to add a todo');
         setTodos(currentTodos => currentTodos.filter(t => t.id !== 0));
         throw error;
+      })
+      .finally(() => {
+        setLoadingTodoIds(prev => prev.filter(id => id !== 0));
+        setIdTodo(0);
       });
   };
 
@@ -135,6 +146,7 @@ export const App: React.FC = () => {
     };
 
     setIdTodo(todoId);
+    setLoadingTodoIds(prev => [...prev, todoId]);
 
     return updateTodoStatus(newTodo)
       .then(updatedTodo => {
@@ -149,6 +161,7 @@ export const App: React.FC = () => {
         setIdTodo(0);
       })
       .finally(() => {
+        setLoadingTodoIds(prev => prev.filter(id => id !== todoId));
         setIdTodo(0);
         setTimeout(() => {
           setErrorMessage('');
@@ -206,6 +219,9 @@ export const App: React.FC = () => {
     const todosToUpdate = todos.filter(
       todo => todo.completed !== !allCompleted,
     );
+    const togglingIds = todosToUpdate.map(todo => todo.id);
+
+    setLoadingTodoIds(togglingIds);
 
     try {
       await Promise.all(
@@ -215,12 +231,16 @@ export const App: React.FC = () => {
       );
 
       setTodos(currentTodos =>
-        currentTodos.map(todo => ({ ...todo, completed: !allCompleted })),
+        currentTodos.map(todo => ({
+          ...todo,
+          completed: !allCompleted,
+        })),
       );
     } catch {
       setErrorMessage('Unable to update todos');
     } finally {
       setIsToggleAllLoading(false);
+      setLoadingTodoIds(prev => prev.filter(id => !togglingIds.includes(id)));
     }
   };
 
@@ -266,6 +286,7 @@ export const App: React.FC = () => {
           />
         )}
       </div>
+
       <ErrorNotification
         errorMessage={errorMessage}
         onClose={setErrorMessage}
