@@ -174,6 +174,26 @@ export const App: React.FC = () => {
     setEditTitle(todo.title);
   };
 
+  const onDeleteTodoWithEditHandling = (todoId: number) => {
+    setIdTodo(todoId);
+    setLoadingTodoIds(prev => [...prev, todoId]);
+
+    return deleteTodo(todoId)
+      .then(() => {
+        setTodos(currentTodos =>
+          currentTodos.filter(todo => todo.id !== todoId),
+        );
+        setEditingTodoId(null);
+        setEditTitle('');
+      })
+      .catch(() => {
+        setErrorMessage('Unable to delete a todo');
+      })
+      .finally(() => {
+        setLoadingTodoIds(prev => prev.filter(id => id !== todoId));
+      });
+  };
+
   const saveEdit = () => {
     if (editingTodoId === null) {
       return;
@@ -185,9 +205,24 @@ export const App: React.FC = () => {
       return;
     }
 
+    const newTitle = editTitle.trim();
+
+    if (newTitle === '') {
+      onDeleteTodoWithEditHandling(editingTodoId);
+
+      return;
+    }
+
+    if (newTitle === updatedTodo.title) {
+      setEditingTodoId(null);
+      setEditTitle('');
+
+      return;
+    }
+
     const newTodo: Todo = {
       ...updatedTodo,
-      title: editTitle.trim(),
+      title: newTitle,
     };
 
     setLoadingTodoIds([editingTodoId]);
